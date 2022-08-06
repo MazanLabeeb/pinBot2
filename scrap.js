@@ -10,7 +10,8 @@ module.exports.download = async function (userinput) {
   return new Promise(async (resolve, reject) => {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: '/usr/bin/google-chrome'
     });
 
     // await page.setUserAgent(userAgent.toString())

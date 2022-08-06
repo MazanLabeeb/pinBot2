@@ -18,7 +18,7 @@ app.route('/')
     if (error) {
       scrap.download(req.body.pin).then(()=>{
         res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"));
-      }).catch(()=>res.send("<h2><center style='color:red'>Captcha Failure, Please try again later. 😐</center></h2><br><p>(The other possible error maybe the invalid key.)</p>"));
+      }).catch(()=>res.send("<h2><center style='color:red'>Captcha Failure, Please try again later. </center></h2><br><p><center>(The other possible error maybe the invalid key.)</cetnter></p>"));
      
     }
   });
