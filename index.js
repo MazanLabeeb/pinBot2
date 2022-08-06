@@ -3,7 +3,7 @@ const express = require("express");
 const path = require("path");
 const app = new express();
 const port = 8080;
-
+ 
 app.use(express.urlencoded({extended:true}));
 
 
@@ -14,14 +14,14 @@ app.route('/')
 .post((req, res)=>{
 
 
-  res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"), (error) => {
-    if (error) {
+  // res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"), (error) => {
+    // if (error) {
       scrap.download(req.body.pin).then(()=>{
         res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"));
-      }).catch(()=>res.send("<h2><center style='color:red'>Captcha Failure, Please try again later. </center></h2><br><p><center>(The other possible error maybe the invalid key.)</cetnter></p>"));
+      }).catch(()=>res.send("<h2><center style='color:red'>Captcha Failure, Please try again later. </center></h2><br><p><center>(The other possible error maybe the invalid key.)</center></p>"));
      
-    }
-  });
+    // }
+  // });
   
 
 
