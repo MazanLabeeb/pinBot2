@@ -9,7 +9,8 @@ module.exports.download = async function (userinput) {
   name = userinput;
   return new Promise(async (resolve, reject) => {
     const browser = await puppeteer.launch({
-      headless: true
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
     // await page.setUserAgent(userAgent.toString())
