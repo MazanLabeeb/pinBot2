@@ -18,7 +18,11 @@ app.route('/')
     // if (error) {
       scrap.download(req.body.pin).then(()=>{
         res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"));
-      }).catch(()=>res.send("<h2><center style='color:red'>Captcha Failure, Please try again later. </center></h2><br><p><center>(The other possible error maybe the invalid key.)</center></p>"));
+      }).catch((error)=>res.send(`
+      <p>
+      <center style="font-size:32px"><b style=";color:red">Error</b>: ${error.msg}</center>
+      </p>
+      `));
      
     // }
   // });
@@ -27,6 +31,9 @@ app.route('/')
 
 })
 
+app.get('/userAgent',(req, res)=>{
+  res.send(req.get('user-agent'));
+});
 
 app.use((req, res)=>{
   res.send("Forbidden :(");

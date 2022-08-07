@@ -1,20 +1,24 @@
 const puppeteer = require('puppeteer');
 const http = require('https'); // or 'https' for https:// URLs
 const fs = require('fs');
-
+var useragent = require('user-agents');
+var userAgent = new useragent();
 
 var name;
 
 module.exports.download = async function (userinput) {
-  name = userinput;
+  name = userinput.trim();
   return new Promise(async (resolve, reject) => {
     const browser = await puppeteer.launch({
-      headless: true
+      headless: false
     });
 
-    // await page.setUserAgent(userAgent.toString())
 
     const page = await browser.newPage();
+
+    page.setUserAgent(userAgent.toString())
+
+
     await page.goto('https://www.nmc.org.uk/registration/search-the-register/');
 
     const data = await page.evaluate(async (name) => {
@@ -29,23 +33,44 @@ module.exports.download = async function (userinput) {
       var btn = document.getElementById("searchRegisterButton");
       await delay(3000);
       btn.click();
-      await delay(4000);
+      await delay(10000);
 
       var morelink = document.querySelectorAll(".more-link");
 
+
+
       try {
-        var nextPage = morelink[0].href;
+        var test = document.getElementById("PinNumber-error");
+        console.log("Debug" + test.innerHTML);
+        return {
+          err: true,
+          msg: "Invalid Key"
+        };
       } catch (error) {
-        return false;
+
+       
       }
 
+      try {
+          var nextPage =  morelink[0].href;
+      } catch (error) {
+        return {
+          err: true,
+          msg: "Captcha Failed!"
+        };
+      }
+
+      
+
+
+
+     
 
       return nextPage;
     }, name);
-    if (!data) {
+    if (data.err == true) {
       await browser.close();
-
-      return reject();
+      return reject(data);
     }
     var download = data;
     download = download.split('?')[0] + "?pdf=1";
