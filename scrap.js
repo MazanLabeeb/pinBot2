@@ -10,7 +10,7 @@ module.exports.download = async function (userinput) {
   name = userinput.trim();
   return new Promise(async (resolve, reject) => {
     const browser = await puppeteer.launch({
-      headless: false
+      headless: true
     });
 
 
