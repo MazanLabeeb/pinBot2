@@ -1,6 +1,0 @@
-install node and npm
-
-start app: 
-node index.js
-
-

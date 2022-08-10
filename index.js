@@ -20,7 +20,7 @@ app.route('/')
         res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"));
       }).catch((error)=>res.send(`
       <p>
-      <center style="font-size:32px"><b style=";color:red">Error</b>: ${error.msg}</center>
+      <center style="font-size:16px"><b style=";color:red;text-decoration:underline;">Error</b>: ${error.msg}</center>
       </p>
       `));
      

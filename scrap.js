@@ -2,12 +2,18 @@ const puppeteer = require('puppeteer-extra')
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin())
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Safari/537.36';
-
+const solver = require("./solver.js");
 
 const http = require('https'); // or 'https' for https:// URLs
 const fs = require('fs');
 const randomUseragent = require('random-useragent');
+let path = require("path");
 var name;
+ 
+// const extPath = path.join(__dirname, "dknlfmjaanfblgfdfebhijalfmhmjjjo");
+// args: [
+//     `--load-extension=${extPath}`,
+//       ]
 
 module.exports.download = async function (userinput) {
   const userAgent = randomUseragent.getRandom();
@@ -18,131 +24,76 @@ module.exports.download = async function (userinput) {
   name = userinput.trim();
   return new Promise(async (resolve, reject) => {
     const browser = await puppeteer.launch({
-      headless: true
+      headless: false
     });
 
 
     const page = await browser.newPage();
 
-    //Randomize viewport size
-    await page.setViewport({
-      width: 1920 + Math.floor(Math.random() * 100),
-      height: 3000 + Math.floor(Math.random() * 100),
-      deviceScaleFactor: 1,
-      hasTouch: false,
-      isLandscape: false,
-      isMobile: false,
-    });
 
-    await page.setUserAgent(UA);
-    await page.setJavaScriptEnabled(true);
-    await page.setDefaultNavigationTimeout(0);
 
-    //Skip images/styles/fonts loading for performance
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-        if (req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image') {
-            req.abort();
-        } else {
-            req.continue();
-        }
-    });
 
-    await page.evaluateOnNewDocument(() => {
-        // Pass webdriver check
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => false,
-        });
-    });
-
-    await page.evaluateOnNewDocument(() => {
-        // Pass chrome check
-        window.chrome = {
-            runtime: {},
-            // etc.
-        };
-    });
-
-    await page.evaluateOnNewDocument(() => {
-        //Pass notifications check
-        const originalQuery = window.navigator.permissions.query;
-        return window.navigator.permissions.query = (parameters) => (
-            parameters.name === 'notifications' ?
-                Promise.resolve({ state: Notification.permission }) :
-                originalQuery(parameters)
-        );
-    });
-
-    await page.evaluateOnNewDocument(() => {
-        // Overwrite the `plugins` property to use a custom getter.
-        Object.defineProperty(navigator, 'plugins', {
-            // This just needs to have `length > 0` for the current test,
-            // but we could mock the plugins too if necessary.
-            get: () => [1, 2, 3, 4, 5],
-        });
-    });
-
-    await page.evaluateOnNewDocument(() => {
-        // Overwrite the `languages` property to use a custom getter.
-        Object.defineProperty(navigator, 'languages', {
-            get: () => ['en-US', 'en'],
-        });
-    });
     await page.goto('https://www.nmc.org.uk/registration/search-the-register/');
 
-    const data = await page.evaluate(async (name) => {
 
-      function delay(time) {
-        return new Promise(function (resolve) {
-          setTimeout(resolve, time)
+    await page.focus('#PinNumber')
+
+    await page.keyboard.type(name);
+    await page.waitForTimeout(1000);
+
+    await page.$eval('#searchRegisterButton', form => form.click());
+
+    await page.waitForTimeout(1000);
+
+    try {
+      // try without captcha
+      var nextPage = await page.$eval('.more-link', anchor => anchor.getAttribute('href'));
+    } catch (error) {
+      // dealing with iframe  captcha
+      await page.waitForSelector('iframe');
+      const elementHandle = await page.$(
+        'iframe[title="recaptcha challenge expires in two minutes"]',
+      );
+      await page.waitForTimeout(3000);    // wait for captcha to load
+
+      const frame = await elementHandle.contentFrame();
+
+      await frame.$eval('#recaptcha-audio-button', form => form.click());
+      await page.waitForTimeout(5000);
+
+
+      try{
+        const text = await frame.$eval('.rc-audiochallenge-tdownload-link', anchor => anchor.getAttribute('href'));
+      }catch(error){
+        return reject({
+          err: true,
+          msg: "Captcha ByPass Limit Reached. You have to wait some time so that Google unban you. For more info, contact bot developer."
         });
       }
-      var input = document.getElementById("PinNumber");
-      input.value = name;
-      var btn = document.getElementById("searchRegisterButton");
-      await delay(3000);
-      btn.click();
-      await delay(10000);
 
-      var morelink = document.querySelectorAll(".more-link");
+      console.log("Captcha Audio Link:" + text);
+      solver.solver(text).then(async function (solved){
+        console.log("Captcha Solved:" + solved);
 
+        await frame.focus('#audio-response')
+        await page.keyboard.type(solved);
 
+        await page.waitForTimeout(5000);
 
-      try {
-        var test = document.getElementById("PinNumber-error");
-        console.log("Debug" + test.innerHTML);
-        return {
-          err: true,
-          msg: "Invalid Key"
-        };
-      } catch (error) {
+        await frame.$eval('#recaptcha-verify-button', form => form.click());
+        // audio-response  input id
+        // recaptcha-verify-button button id
+      }).catch(() => console.log('ERROR WHILE SOLVING CAPTCHA'));
 
-
-      }
-
-      try {
-        var nextPage = morelink[0].href;
-      } catch (error) {
-        return {
-          err: true,
-          msg: "Captcha Failed!"
-        };
-      }
-
-
-
-
-
-
-
-      return nextPage;
-    }, name);
-    if (data.err == true) {
-      await browser.close();
-      return reject(data);
+      // await page.waitForTimeout(8000000);
     }
-    var download = data;
+
+
+
+
+    var download = nextPage;
     download = download.split('?')[0] + "?pdf=1";
+    download = "https://www.nmc.org.uk" + download;
     console.log("Link: " + download);
 
 
