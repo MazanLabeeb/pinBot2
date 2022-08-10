@@ -9,7 +9,8 @@ const fs = require('fs');
 const randomUseragent = require('random-useragent');
 let path = require("path");
 var name;
- 
+var nextPage;
+
 // const extPath = path.join(__dirname, "dknlfmjaanfblgfdfebhijalfmhmjjjo");
 // args: [
 //     `--load-extension=${extPath}`,
@@ -20,11 +21,11 @@ module.exports.download = async function (userinput) {
   const UA = userAgent || USER_AGENT;
 
 
-
+  // executablePath: '/usr/bin/google-chrome'
   name = userinput.trim();
   return new Promise(async (resolve, reject) => {
     const browser = await puppeteer.launch({
-      headless: false
+      headless: true
     });
 
 
@@ -47,7 +48,7 @@ module.exports.download = async function (userinput) {
 
     try {
       // try without captcha
-      var nextPage = await page.$eval('.more-link', anchor => anchor.getAttribute('href'));
+      nextPage = await page.$eval('.more-link', anchor => anchor.getAttribute('href'));
     } catch (error) {
       // dealing with iframe  captcha
       await page.waitForSelector('iframe');
@@ -61,32 +62,59 @@ module.exports.download = async function (userinput) {
       await frame.$eval('#recaptcha-audio-button', form => form.click());
       await page.waitForTimeout(5000);
 
-
-      try{
-        const text = await frame.$eval('.rc-audiochallenge-tdownload-link', anchor => anchor.getAttribute('href'));
-      }catch(error){
+      var text;
+      try {
+        text = await frame.$eval('.rc-audiochallenge-tdownload-link', anchor => anchor.getAttribute('href'));
+      } catch (error) {
         return reject({
           err: true,
           msg: "Captcha ByPass Limit Reached. You have to wait some time so that Google unban you. For more info, contact bot developer."
         });
       }
 
+
+
       console.log("Captcha Audio Link:" + text);
-      solver.solver(text).then(async function (solved){
+
+      try {
+        let solved = await solver.solver(text);
+
         console.log("Captcha Solved:" + solved);
 
         await frame.focus('#audio-response')
         await page.keyboard.type(solved);
 
-        await page.waitForTimeout(5000);
+        await page.waitForTimeout(4000);
 
         await frame.$eval('#recaptcha-verify-button', form => form.click());
-        // audio-response  input id
-        // recaptcha-verify-button button id
-      }).catch(() => console.log('ERROR WHILE SOLVING CAPTCHA'));
+        await page.waitForTimeout(3000);
 
-      // await page.waitForTimeout(8000000);
+        try {
+          nextPage = await page.$eval('.more-link', anchor => anchor.getAttribute('href'));
+          console.log(nextPage);
+        } catch (error) {
+          return reject({
+            err: true,
+            msg: "Captcha was bypassed successfully! But the key you provided is not valid. Please put the valid pin Key."
+          });
+        }
+
+
+      } catch (error) {
+        console.log('ERROR WHILE SOLVING CAPTCHA')
+        return reject({
+          err: true,
+          msg: "ERROR WHILE SOLVING CAPTCHA"
+        });
+      }
+
+
+
+
+      // await page.waitForTimeout(3000);
     }
+
+
 
 
 

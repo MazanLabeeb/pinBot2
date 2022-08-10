@@ -19,9 +19,9 @@ app.route('/')
       scrap.download(req.body.pin).then(()=>{
         res.download(path.join(__dirname, 'public/'+req.body.pin+".pdf"));
       }).catch((error)=>res.send(`
-      <p>
-      <center style="font-size:16px"><b style=";color:red;text-decoration:underline;">Error</b>: ${error.msg}</center>
-      </p>
+      <div style="padding-left:16px;max-width:600px; margin:0 auto; margin:16px; border:1px solid red; border-left-width: 20px;">
+      <p><b style=";color:red;">Error</b>: ${error.msg}</p>
+      </div>
       `));
      
     // }
